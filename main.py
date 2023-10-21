@@ -90,6 +90,7 @@ class Lichess:
                     challenge_time_control = json_data["challenge"]["speed"]
                     # eg. "standard"
                     challenge_variant = json_data["challenge"]["variant"]["key"]
+                    challenge_rated = json_data["challenge"]["rated"]
 
                     sender_username = json_data["challenge"]["challenger"]["id"]
                     sender_title = json_data["challenge"]["challenger"]["title"]
@@ -110,13 +111,17 @@ class Lichess:
                                   f"time control: {challenge_time_control}, challenge variant: {challenge_variant}")
 
                     if challenge_variant.lower() == "standard":
-                        if environment != "DEVELOPMENT":
-                            self.start_game(challenge_id, our_color)
-                        else:
-                            if sender_username == dev_username:
+                        if not challenge_rated:
+                            if environment != "DEVELOPMENT":
                                 self.start_game(challenge_id, our_color)
                             else:
-                                self.reject_game(game_id=challenge_id, reason=f"we're in dev environment, and the user isn't {dev_username}")
+                                if sender_username == dev_username:
+                                    self.start_game(challenge_id, our_color)
+                                else:
+                                    self.reject_game(game_id=challenge_id,
+                                                     reason=f"we're in dev environment, and the user isn't {dev_username}")
+                        else:
+                            self.reject_game(game_id=challenge_id, reason=f"the sender tried to play a ranked game", reason_to_send="casual")
                     else:
                         self.reject_game(game_id=challenge_id, reason=f"it didn't contain the correct variant", reason_to_send="standard")
 
