@@ -130,7 +130,7 @@ class Lichess:
 
         response = requests.post(f"{self.url}/api/bot/game/{game_id}/move/{move}", headers=headers)
         if response.status_code != 200:
-            logs.error(f"Something went wrong while making the move, here is the error: {response.headers}")
+            logs.error(f"Something went wrong while making the move, here is the error: {response.text}")
 
     def handle_game_stream(self, game_id: str, color: str):
         # spin up the croissantdealer engine
@@ -181,7 +181,7 @@ class Lichess:
             logs.info(f"Successfully started a game with id of: {game_id}")
             active_games.append(game_id)
         else:
-            logs.error(f"Something went wrong while trying to start a game with an id of {game_id}, here is the error: {response.headers}")
+            logs.error(f"Something went wrong while trying to start a game with an id of {game_id}, here is the error: {response.text}")
 
         game_thread = threading.Thread(target=self.handle_game_stream, args=(game_id, color))
         game_thread.start()
@@ -194,7 +194,7 @@ class Lichess:
         if response.status_code == 200:
             logs.info(f"Successfully rejected challenge with an id of: '{game_id}', because {reason}")
         else:
-            logs.error(f"Failed to reject a challenge with an id of: '{game_id}'. Here is the error: {response.headers}")
+            logs.error(f"Failed to reject a challenge with an id of: '{game_id}'. Here is the error: {response.text}")
 
     def resign(self, game_id: str):
         ...
@@ -225,4 +225,4 @@ if stream.status_code == 200:
     thread = threading.Thread(target=bot.handle_event_stream, args=(stream, ))
     thread.start()
 else:
-    logs.error(f"Someting went wrong while trying to start the bot. Here is the error: {stream.headers}")
+    logs.error(f"Someting went wrong while trying to start the bot. Here is the error: {stream.text}")
