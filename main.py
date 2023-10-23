@@ -64,6 +64,7 @@ class Lichess:
         self.url = url
         self.environment = environment
         self.verbose = verbose
+        self.command_list = ["?help", "?evaluate"]
 
     def login(self):
         return requests.get(f'{self.url}/api/stream/event', headers=self.headers, stream=True)
@@ -136,6 +137,10 @@ class Lichess:
         # spin up the croissantdealer engine
         croissantdealer = Croissantdealer(color=color)
 
+        self.send_message(game_id=game_id, text="Hi! :) Send '?help' for the list of all commands "
+                                                "and their's description. Checkout my bio for the "
+                                                "link to the github repo!")
+
         # connect to the game stream
         response = requests.get(f'{self.url}/api/bot/game/stream/{game_id}', headers=self.headers, stream=True)
 
@@ -172,7 +177,11 @@ class Lichess:
                             move = croissantdealer.get_move()
                             self.play_move(game_id=game_id, move=str(move), croissantdealer=croissantdealer)
                     except KeyError as e:
-                        logs.info("lichess send us stuff that is not a move!")
+                        # check if the event is a chat message
+                        if json_data["type"] == "chatLine":
+                            if json_data["text"] in self.command_list:
+                                self.commands(game_id=game_id, text=json_data["text"])
+
 
     def start_game(self, game_id: str, color: str):
         # start the game
@@ -197,13 +206,49 @@ class Lichess:
             logs.error(f"Failed to reject a challenge with an id of: '{game_id}'. Here is the error: {response.text}")
 
     def resign(self, game_id: str):
-        ...
+        """resign a given game"""
+        response = requests.post(f'{self.url}/api/bot/game/{game_id}/resign', headers=self.headers)
+        if response.status_code == 200:
+            logs.info(f"Successfully resigned in a challenge with an id of: '{game_id}'")
+        else:
+            logs.error(f"Failed to resign in a challenge with an id of: '{game_id}'. Here is the error: {response.text}")
 
-    def send_message(self, game_id: str):
-        ...
+    def send_message(self, game_id: str, text: str, room: str = "player"):
+        """send a message in a game's chat"""
+        data = {
+            "room": f"{room}",
+            "text": f"{text}"
+        }
+
+        response = requests.post(f'{self.url}/api/bot/game/{game_id}/chat', headers=self.headers, data=data)
+        if response.status_code == 200:
+            logs.info(f"Successfully send a message in the chat of a challenge with an id of: '{game_id}'")
+        else:
+            logs.error(f"Failed to send a message in the chat of a challenge with an id of: "
+                       f"'{game_id}'. Here is the error: {response.text}")
 
     def get_chat(self, game_id: str):
-        ...
+        """get chat of a game"""
+        response = requests.get(f'{self.url}/api/board/game/{game_id}/chat', headers=self.headers)
+        if response.status_code == 200:
+            logs.info(f"Successfully got the chat of a challenge with an id of: '{game_id}'")
+        else:
+            logs.error(f"Failed to get the chat of a challenge with an id of: "
+                       f"'{game_id}'. Here is the error: {response.text}")
+
+    def commands(self, game_id: str, text: str = "/help"):
+        defined_commands = {
+            "?help": "Available commands: "
+                     "1. ?help - displays this message "
+                     "2. ?evaluate - displays the bot evaluation of the current position",
+            "?evaluate": "This command is still getting implemented!"
+        }
+
+        match text:
+            case "?help":
+                self.send_message(game_id=game_id, text=defined_commands["?help"])
+            case "?evaluate":
+                self.send_message(game_id=game_id, text=defined_commands["?evaluate"])
 
 
 # initialize the logs
