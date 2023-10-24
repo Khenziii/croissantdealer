@@ -43,9 +43,12 @@ class Engine:
 
         return uci_string
 
-    def get_legal_moves(self):
+    def get_legal_moves(self, board: chess.Board = None):
         """return the list of all legal moves"""
-        return list(self.board.legal_moves)
+        if not board:
+            board = self.board
+
+        return list(board.legal_moves)
 
     def get_pieces(self, board: chess.Board):
         """returns the list of all pieces"""
@@ -104,29 +107,52 @@ class Engine:
 
 class Croissantdealer(Engine):
     """The braining thing"""
-    def get_move(self):
-        """calculate the move to make"""
-        moves = self.get_legal_moves()
 
-        # return the move with highest evaluation
+    def get_move(self, board: chess.Board = None, depth: int = 2) -> list[chess.Move | int]:
+        """Calculate the move to make"""
+        if not board:
+            board = self.board
+
+        moves = self.get_legal_moves(board=board)
+        best_move_eval = -10000
         best_moves = []
-        best_move_eval = -1000
+        current_board_eval = self.evaluate(board)
+        ours_move = self.our_move()
 
+        # loop through all of the legal moves
         for move in moves:
-            temp_board = self.board.copy()
+            # create a copy of the analyzed board
+            temp_board = board.copy()
+            # make a random move in that board
             temp_board.push(move)
 
+            # analyze the board
             eval = self.evaluate(temp_board)
+            if not ours_move:
+                # if not our move, flip the eval (eval returns us perspective)
+                eval = -eval
+
+            print(f"current board eval: {current_board_eval}")
+            print(f"board eval after the move: {eval}")
+
+            # check if the move makes our position better
+            if eval <= current_board_eval:
+                # check if we have any moves already (we always need to have atleast one)
+                if len(best_moves) == 0:
+                    best_moves.append(move)
+
+                # screw the line :) (probably just a random move, lets not waste time on it)
+                continue
+
+            if depth >= 0:
+                _, eval = self.get_move(board=temp_board, depth=depth - 1)
+
             if eval > best_move_eval:
                 best_move_eval = eval
                 best_moves = [move]
-            elif eval == best_move_eval:
-                best_moves.append(move)
 
-        # get a random move from the moves that had the same highest eval
-        best_move = best_moves[random.randint(0, len(best_moves)-1)]
-
-        return best_move
+        best_move = random.choice(best_moves)
+        return [best_move, best_move_eval]
 
     def evaluate(self, board: chess.Board):
         pieces = self.get_pieces(board=board)

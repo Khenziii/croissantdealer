@@ -167,14 +167,14 @@ class Lichess:
                     pass
 
                 if croissantdealer.our_move():
-                    move = croissantdealer.get_move()
+                    move = croissantdealer.get_move()[0]
                     self.play_move(game_id=game_id, move=str(move), croissantdealer=croissantdealer)
                 else:
                     try:
                         if croissantdealer.get_uci() != json_data["moves"]:
                             croissantdealer.make_move(f'{json_data["moves"].split(" ")[-1]}')
 
-                            move = croissantdealer.get_move()
+                            move = croissantdealer.get_move()[0]
                             self.play_move(game_id=game_id, move=str(move), croissantdealer=croissantdealer)
                     except KeyError as e:
                         # check if the event is a chat message
