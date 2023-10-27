@@ -195,7 +195,7 @@ class Lichess:
         game_thread.start()
 
     def reject_game(self, game_id: str, reason: str, reason_to_send: str = "later"):
-        # avaible options are listed here: https://lichess.org/api#tag/Challenges/operation/challengeDecline
+        # available options are listed here: https://lichess.org/api#tag/Challenges/operation/challengeDecline
         data = {"reason": reason_to_send}
 
         response = requests.post(f'{self.url}/api/challenge/{game_id}/decline', headers=self.headers, data=data)

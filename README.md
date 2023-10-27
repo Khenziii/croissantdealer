@@ -17,3 +17,5 @@ After doing that, create the "secrets.env" file in this directory, and define th
 
 # TO-DO List
 1. actually make him never play 1. d4
+2. make the bot think about the position while the opponent is thinking
+3. implement the evaluation command

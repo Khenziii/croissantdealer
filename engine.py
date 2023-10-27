@@ -1,9 +1,6 @@
 import chess
 import random
 
-global moves_calculated
-moves_calculated = 0
-
 class Engine:
     """The setup for the braining thing"""
     def __init__(self, color: str) -> None:
@@ -16,13 +13,14 @@ class Engine:
             "bishop": 3,
             "queen": 9
         }
+        self.transposition_table = {}
 
     def new_board(self) -> None:
         """Resets the board"""
         self.board = chess.Board()
 
     def our_move(self, board: chess.Board = None):
-        """returns True if our move and False if their's"""
+        """returns True if our move and False if theirs"""
         if not board:
             board = self.board
 
@@ -132,8 +130,6 @@ class Croissantdealer(Engine):
 
         # loop through each legal move
         for move in moves:
-            print(str(move))
-
             # create a copy of the original board
             temp_board = board.copy()
             # play the random move
@@ -168,17 +164,9 @@ class Croissantdealer(Engine):
         # get a random move from the equally best moves
         best_move = random.choice(best_moves)
 
-        global moves_calculated
-        print(f"total moves calculated: {moves_calculated}")
-        moves_calculated = 0
-
-
         return [best_move, best_eval]
 
     def minimax(self, board: chess.Board, depth: int, alpha: int, beta: int, maximizing: bool):
-        global moves_calculated
-        moves_calculated += 1
-
         if not board:
             board = self.board
 
@@ -191,8 +179,6 @@ class Croissantdealer(Engine):
 
             moves = self.get_legal_moves(board=board)
             for move in moves:
-                print(str(move))
-
                 # create a copy of the current board
                 temp_board = board.copy()
                 # play a move on the copied board
@@ -210,8 +196,6 @@ class Croissantdealer(Engine):
 
             moves = self.get_legal_moves(board=board)
             for move in moves:
-                print(str(move))
-
                 # create a copy of the current board
                 temp_board = board.copy()
                 # play a move on the copied board
@@ -226,6 +210,31 @@ class Croissantdealer(Engine):
             return min_eval
 
     def evaluate(self, board: chess.Board):
+        # check if we have already evaluated this board
+        if board.fen() in self.transposition_table:
+            return self.transposition_table[board.fen()]
+
+        # if the board is checkmate
+        if board.is_checkmate():
+            if board.turn == chess.WHITE:
+                return -10000
+            else:
+                return 10000
+
+        # if the position is a draw
+        if board.is_stalemate():
+            # stalemate
+            return 0
+        elif board.is_insufficient_material():
+            # insufficient material to mate
+            return 0
+        elif board.can_claim_threefold_repetition():
+            # threefold repetition
+            return 0
+        elif board.can_claim_fifty_moves():
+            # the 50 moves rule
+            return 0
+
         pieces = self.get_pieces(board=board)
 
         worthiness_white = 0
@@ -260,5 +269,8 @@ class Croissantdealer(Engine):
                     worthiness_black += pieces["black"]["queens"] * self.values["queen"]
 
         evaluation = worthiness_white - worthiness_black
+
+        # save the evaluation to the transposition table
+        self.transposition_table[board.fen()] = evaluation
 
         return evaluation
