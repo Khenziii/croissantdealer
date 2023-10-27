@@ -1,11 +1,13 @@
 import chess
 import random
 
+global moves_calculated
+moves_calculated = 0
+
 class Engine:
     """The setup for the braining thing"""
     def __init__(self, color: str) -> None:
         self.board = chess.Board()
-        self.game_just_started = True
         self.color = color
         self.values = {
             "pawn": 1,
@@ -19,11 +21,14 @@ class Engine:
         """Resets the board"""
         self.board = chess.Board()
 
-    def our_move(self):
+    def our_move(self, board: chess.Board = None):
         """returns True if our move and False if their's"""
-        if self.board.turn == chess.WHITE and self.color.lower() == "white":
+        if not board:
+            board = self.board
+
+        if board.turn == chess.WHITE and self.color.lower() == "white":
             return True
-        if self.board.turn == chess.BLACK and self.color.lower() == "black":
+        if board.turn == chess.BLACK and self.color.lower() == "black":
             return True
 
         return False
@@ -108,51 +113,117 @@ class Engine:
 class Croissantdealer(Engine):
     """The braining thing"""
 
-    def get_move(self, board: chess.Board = None, depth: int = 2) -> list[chess.Move | int]:
+    def get_move(self, board: chess.Board = None, depth: int = 3) -> list[chess.Move | int]:
         """Calculate the move to make"""
         if not board:
             board = self.board
 
-        moves = self.get_legal_moves(board=board)
-        best_move_eval = -10000
+        # initialize some variables
         best_moves = []
-        current_board_eval = self.evaluate(board)
-        ours_move = self.our_move()
 
-        # loop through all of the legal moves
+        # use the minimax function to evaluate deeply every move
+        moves = self.get_legal_moves(board=board)
+
+        # set the temporary best_eval
+        if self.color == "white":
+            best_eval = -10000
+        else:
+            best_eval = 10000
+
+        # loop through each legal move
         for move in moves:
-            # create a copy of the analyzed board
+            print(str(move))
+
+            # create a copy of the original board
             temp_board = board.copy()
-            # make a random move in that board
+            # play the random move
             temp_board.push(move)
 
-            # analyze the board
-            eval = self.evaluate(temp_board)
-            if not ours_move:
-                # if not our move, flip the eval (eval returns us perspective)
-                eval = -eval
+            # evaluate the moves (with depth, using minimax)
+            if self.color == "white":
+                # get the eval of the line
+                best_move_eval_minimax = self.minimax(board=temp_board, depth=depth-1, alpha=-10000, beta=10000,
+                                                      maximizing=False)
 
-            print(f"current board eval: {current_board_eval}")
-            print(f"board eval after the move: {eval}")
+                # if the line is better than our current best one, replace the current one
+                if best_move_eval_minimax > best_eval:
+                    best_eval = best_move_eval_minimax
+                    best_moves = [move]
+                elif best_move_eval_minimax == best_eval:
+                    # if the line is as good as our current one, add it to the possible moves list
+                    best_moves.append(move)
+            elif self.color == "black":
+                # get the eval of the line
+                best_move_eval_minimax = self.minimax(board=temp_board, depth=depth-1, alpha=-10000, beta=10000,
+                                                      maximizing=True)
 
-            # check if the move makes our position better
-            if eval <= current_board_eval:
-                # check if we have any moves already (we always need to have atleast one)
-                if len(best_moves) == 0:
+                # if the line is better than our current best one, replace the current one
+                if best_move_eval_minimax < best_eval:
+                    best_eval = best_move_eval_minimax
+                    best_moves = [move]
+                elif best_move_eval_minimax == best_eval:
+                    # if the line is as good as our current one, add it to the possible moves list
                     best_moves.append(move)
 
-                # screw the line :) (probably just a random move, lets not waste time on it)
-                continue
-
-            if depth >= 0:
-                _, eval = self.get_move(board=temp_board, depth=depth - 1)
-
-            if eval > best_move_eval:
-                best_move_eval = eval
-                best_moves = [move]
-
+        # get a random move from the equally best moves
         best_move = random.choice(best_moves)
-        return [best_move, best_move_eval]
+
+        global moves_calculated
+        print(f"total moves calculated: {moves_calculated}")
+        moves_calculated = 0
+
+
+        return [best_move, best_eval]
+
+    def minimax(self, board: chess.Board, depth: int, alpha: int, beta: int, maximizing: bool):
+        global moves_calculated
+        moves_calculated += 1
+
+        if not board:
+            board = self.board
+
+        # if reached the end of the line, return the evaluation
+        if depth <= 0 or board.is_game_over():
+            return self.evaluate(board=board)
+
+        if maximizing:
+            max_eval = -100000
+
+            moves = self.get_legal_moves(board=board)
+            for move in moves:
+                print(str(move))
+
+                # create a copy of the current board
+                temp_board = board.copy()
+                # play a move on the copied board
+                temp_board.push(move)
+
+                eval = self.minimax(board=temp_board, depth=depth-1, alpha=alpha, beta=beta, maximizing=False)
+                max_eval = max(max_eval, eval)
+
+                alpha = max(alpha, eval)
+                if beta <= alpha:
+                    break
+            return max_eval
+        else:
+            min_eval = 10000
+
+            moves = self.get_legal_moves(board=board)
+            for move in moves:
+                print(str(move))
+
+                # create a copy of the current board
+                temp_board = board.copy()
+                # play a move on the copied board
+                temp_board.push(move)
+
+                eval = self.minimax(board=temp_board, depth=depth-1, alpha=alpha, beta=beta, maximizing=True)
+                min_eval = min(min_eval, eval)
+
+                beta = min(beta, eval)
+                if beta <= alpha:
+                    break
+            return min_eval
 
     def evaluate(self, board: chess.Board):
         pieces = self.get_pieces(board=board)
@@ -188,10 +259,6 @@ class Croissantdealer(Engine):
                 case "queens":
                     worthiness_black += pieces["black"]["queens"] * self.values["queen"]
 
-        evaluation = 0
-        if self.color == "white":
-            evaluation = worthiness_white - worthiness_black
-        elif self.color == "black":
-            evaluation = worthiness_black - worthiness_white
+        evaluation = worthiness_white - worthiness_black
 
         return evaluation

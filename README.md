@@ -1,11 +1,12 @@
-# !!!WARNING!!!
-At the moment, the whole code is just boilerplate. The bot is not actually "thinking" yet. Working on it :)
-
 # croissantdealer
-croissantdealer is a simple chess bot. He probably isn't the toughest enemy that you've ever faced, but it's defienietly fun to create him! :) (He also is an absolute chad that never plays 1. d4 ;>) And no, he doesn't sell croissants. You can play with him <a href="https://lichess.org/?user=croissantdealer#friend">here</a> 👍
+croissantdealer is a simple chess bot. He probably isn't the toughest enemy that you've ever faced, but it's definitely fun to create him! :) He has been written from scratch (well, almost. The communication with Lichess's API and move generation has been self-implemented. The only thing that we're using is the <a href="https://pypi.org/project/chess/">chess</a> library (we're only using it for board manipulation (no already built engines)) Croissantdealer also is an absolute chad that never plays 1. d4 ;>) And no, he doesn't sell croissants. You can play with him <a href="https://lichess.org/?user=croissantdealer#friend">here</a> 👍
+
+# features
+as of right now, croissantdealer has these features:
+1. **minimax; alpha beta pruning** - the bot is using minimax for move generation :)
 
 # Contributing
-If you'd like to contribute, go ahead  :). All of the contributions are **greatly** appreciated. I'll try to close all of the PR's and Issues ASAP. You can checkout the guide to enter the development enviorment below.
+If you'd like to contribute, go ahead  :). All the contributions are **greatly** appreciated. I'll try to close all of the PR's and Issues ASAP. You can checkout the guide to enter the development enviorment below.
 
 # Starting the dev environment
 1. create the python virtual environment: `python3 -m venv env`

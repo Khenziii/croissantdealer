@@ -182,7 +182,6 @@ class Lichess:
                             if json_data["text"] in self.command_list:
                                 self.commands(game_id=game_id, text=json_data["text"])
 
-
     def start_game(self, game_id: str, color: str):
         # start the game
         response = requests.post(f"{self.url}/api/challenge/{game_id}/accept", headers=self.headers)
