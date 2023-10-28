@@ -4,6 +4,7 @@ croissantdealer is a simple chess bot. He probably isn't the toughest enemy that
 # features
 as of right now, croissantdealer has these features:
 1. **minimax; alpha beta pruning** - the bot is using minimax for move generation :)
+2. **transposition table** - the bot is using a transposition table to avoid evaluating position a couple of times
 
 # Contributing
 If you'd like to contribute, go ahead  :). All the contributions are **greatly** appreciated. I'll try to close all of the PR's and Issues ASAP. You can checkout the guide to enter the development enviorment below.

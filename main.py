@@ -156,11 +156,13 @@ class Lichess:
                 # check if we need to make a move
                 try:
                     if json_data["status"] == "mate":
-                        # send a "Good Game!" in the chat here later :)
                         if json_data["winner"].lower() == color:
                             logs.info(f"game with an id of {game_id} has ended! We won :)")
+                            self.send_message(game_id=game_id, text="GG's! :)")
                         else:
                             logs.info(f"game with an id of {game_id} has ended! We lost :P")
+                            self.send_message(game_id=game_id, text="Well, I'm pretty sure that i was "
+                                                                    "close to winning :P. GG's! :)")
 
                         return
                 except KeyError:

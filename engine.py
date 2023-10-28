@@ -11,7 +11,8 @@ class Engine:
             "rook": 5,
             "knight": 3,
             "bishop": 3,
-            "queen": 9
+            "queen": 9,
+            "activity": 0.1
         }
         self.transposition_table = {}
 
@@ -46,12 +47,39 @@ class Engine:
 
         return uci_string
 
-    def get_legal_moves(self, board: chess.Board = None):
+    def heuristic(self, board: chess.Board, move: chess.Move):
+        """sort the moves in a good order for the alpha beta pruning to be more efficient"""
+        if not board:
+            board = self.board
+
+        # Get the destination square
+        destination = move.to_square
+
+        # Get the piece at the destination square
+        piece = board.piece_at(destination)
+
+        # If there's a piece at the destination square, give it a higher score
+        if piece is not None:
+            return 1000
+
+        # If there's no piece at the destination square, give the move a lower score
+        return 100
+
+    def get_legal_moves(self, board: chess.Board = None, return_in_order: bool = True):
         """return the list of all legal moves"""
         if not board:
             board = self.board
 
-        return list(board.legal_moves)
+        # get all the legal moves
+        legal_moves = list(board.legal_moves)
+
+        # Sort them in a good order (e.g. first moves will be something like: "take a piece with a pawn")
+        # This makes the alpha beta pruning much more effective
+        if return_in_order:
+            # Sort the moves based on the heuristic scores
+            legal_moves.sort(key=lambda move: self.heuristic(board=board, move=move), reverse=True)
+
+        return legal_moves
 
     def get_pieces(self, board: chess.Board):
         """returns the list of all pieces"""
@@ -267,6 +295,21 @@ class Croissantdealer(Engine):
                     worthiness_black += pieces["black"]["bishops"] * self.values["bishop"]
                 case "queens":
                     worthiness_black += pieces["black"]["queens"] * self.values["queen"]
+
+        # make the engine play actively (give it some points for every square that it can move to)
+        attacked_squares_white = 0
+        attacked_squares_black = 0
+
+        for square in range(64):
+            if board.is_attacked_by(chess.WHITE, square):
+                attacked_squares_white += 1
+            if board.is_attacked_by(chess.BLACK, square):
+                attacked_squares_black += 1
+
+        print(attacked_squares_black)
+        print(attacked_squares_white)
+        worthiness_white += attacked_squares_white * self.values["activity"]
+        worthiness_black += attacked_squares_black * self.values["activity"]
 
         evaluation = worthiness_white - worthiness_black
 
