@@ -182,7 +182,7 @@ class Lichess:
                         # check if the event is a chat message
                         if json_data["type"] == "chatLine":
                             if json_data["text"] in self.command_list:
-                                self.commands(game_id=game_id, text=json_data["text"])
+                                self.commands(game_id=game_id, text=json_data["text"], croissantdealer=croissantdealer)
 
     def start_game(self, game_id: str, color: str):
         # start the game
@@ -237,19 +237,21 @@ class Lichess:
             logs.error(f"Failed to get the chat of a challenge with an id of: "
                        f"'{game_id}'. Here is the error: {response.text}")
 
-    def commands(self, game_id: str, text: str = "/help"):
+    def commands(self, game_id: str, croissantdealer: Croissantdealer, text: str = "?help"):
         defined_commands = {
             "?help": "Available commands: "
                      "1. ?help - displays this message "
                      "2. ?evaluate - displays the bot evaluation of the current position",
-            "?evaluate": "This command is still getting implemented!"
+            "?evaluate": "(+ = white, - = black, 0 = draw) This is the current evaluation of the position:"
         }
 
         match text:
             case "?help":
                 self.send_message(game_id=game_id, text=defined_commands["?help"])
             case "?evaluate":
-                self.send_message(game_id=game_id, text=defined_commands["?evaluate"])
+                evaluation = croissantdealer.evaluate()
+                print(f"{defined_commands['?evaluate']} {evaluation}")
+                self.send_message(game_id=game_id, text=f"{defined_commands['?evaluate']} {evaluation}")
 
 
 # initialize the logs

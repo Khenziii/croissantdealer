@@ -4,7 +4,8 @@ croissantdealer is a simple chess bot. He probably isn't the toughest enemy that
 # features
 as of right now, croissantdealer has these features:
 1. **minimax; alpha beta pruning** - the bot is using minimax for move generation :)
-2. **transposition table** - the bot is using a transposition table to avoid evaluating position a couple of times
+2. **ordering the moves for pruning** - certain moves will be ordered specifically to make the bot be able to prune the other options 
+3. **transposition table** - the bot is using a transposition table to avoid evaluating position a couple of times
 
 # Contributing
 If you'd like to contribute, go ahead  :). All the contributions are **greatly** appreciated. I'll try to close all of the PR's and Issues ASAP. You can checkout the guide to enter the development enviorment below.
@@ -19,4 +20,5 @@ After doing that, create the "secrets.env" file in this directory, and define th
 # TO-DO List
 1. actually make him never play 1. d4
 2. make the bot think about the position while the opponent is thinking
-3. implement the evaluation command
+3. make the bot spend different time thinking about the move based on the time control
+4. split the main.py into main.py and lichess.py

@@ -237,7 +237,10 @@ class Croissantdealer(Engine):
                     break
             return min_eval
 
-    def evaluate(self, board: chess.Board):
+    def evaluate(self, board: chess.Board = None):
+        if not board:
+            board = self.board
+
         # check if we have already evaluated this board
         if board.fen() in self.transposition_table:
             return self.transposition_table[board.fen()]
