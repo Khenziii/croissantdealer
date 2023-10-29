@@ -15,7 +15,6 @@ class Engine:
             "activity": 0.1
         }
         self.transposition_table = {}
-
     def new_board(self) -> None:
         """Resets the board"""
         self.board = chess.Board()
@@ -212,7 +211,12 @@ class Croissantdealer(Engine):
                 # play a move on the copied board
                 temp_board.push(move)
 
-                eval = self.minimax(board=temp_board, depth=depth-1, alpha=alpha, beta=beta, maximizing=False)
+                conditions_for_longer_calculation = temp_board.is_check()  # add another conditions here
+                if conditions_for_longer_calculation:
+                    eval = self.minimax(board=temp_board, depth=depth, alpha=alpha, beta=beta, maximizing=False)
+                else:
+                    eval = self.minimax(board=temp_board, depth=depth - 1, alpha=alpha, beta=beta, maximizing=False)
+
                 max_eval = max(max_eval, eval)
 
                 alpha = max(alpha, eval)
@@ -229,7 +233,12 @@ class Croissantdealer(Engine):
                 # play a move on the copied board
                 temp_board.push(move)
 
-                eval = self.minimax(board=temp_board, depth=depth-1, alpha=alpha, beta=beta, maximizing=True)
+                conditions_for_longer_calculation = temp_board.is_check()  # add another conditions here
+                if conditions_for_longer_calculation:
+                    eval = self.minimax(board=temp_board, depth=depth, alpha=alpha, beta=beta, maximizing=True)
+                else:
+                    eval = self.minimax(board=temp_board, depth=depth - 1, alpha=alpha, beta=beta, maximizing=True)
+
                 min_eval = min(min_eval, eval)
 
                 beta = min(beta, eval)
@@ -309,8 +318,6 @@ class Croissantdealer(Engine):
             if board.is_attacked_by(chess.BLACK, square):
                 attacked_squares_black += 1
 
-        print(attacked_squares_black)
-        print(attacked_squares_white)
         worthiness_white += attacked_squares_white * self.values["activity"]
         worthiness_black += attacked_squares_black * self.values["activity"]
 

@@ -9,7 +9,7 @@ from engine import Croissantdealer
 
 # define stuff
 # get the token from secrets.env
-# load all of the variables from secrets.env into python environment
+# load all the variables from secrets.env into python environment
 load_dotenv("secrets.env")
 # get the variables
 token = os.getenv('lichess_api_token')
@@ -64,7 +64,7 @@ class Lichess:
         self.url = url
         self.environment = environment
         self.verbose = verbose
-        self.command_list = ["?help", "?evaluate"]
+        self.command_list = ["?help", "?eval"]
 
     def login(self):
         return requests.get(f'{self.url}/api/stream/event', headers=self.headers, stream=True)
@@ -158,24 +158,27 @@ class Lichess:
                     if json_data["status"] == "mate":
                         if json_data["winner"].lower() == color:
                             logs.info(f"game with an id of {game_id} has ended! We won :)")
-                            self.send_message(game_id=game_id, text="GG's! :)")
+                            self.send_message(game_id=game_id, text="gg's! :)")
                         else:
                             logs.info(f"game with an id of {game_id} has ended! We lost :P")
                             self.send_message(game_id=game_id, text="Well, I'm pretty sure that i was "
-                                                                    "close to winning :P. GG's! :)")
+                                                                    "close to winning :P. gg's! :)")
 
                         return
                 except KeyError:
                     pass
 
                 if croissantdealer.our_move():
+                    # calculate the move to make
                     move = croissantdealer.get_move()[0]
                     self.play_move(game_id=game_id, move=str(move), croissantdealer=croissantdealer)
                 else:
                     try:
                         if croissantdealer.get_uci() != json_data["moves"]:
+                            # make the move on croissantdealer's board
                             croissantdealer.make_move(f'{json_data["moves"].split(" ")[-1]}')
 
+                            # calculate the move to make
                             move = croissantdealer.get_move()[0]
                             self.play_move(game_id=game_id, move=str(move), croissantdealer=croissantdealer)
                     except KeyError as e:
@@ -241,17 +244,16 @@ class Lichess:
         defined_commands = {
             "?help": "Available commands: "
                      "1. ?help - displays this message "
-                     "2. ?evaluate - displays the bot evaluation of the current position",
-            "?evaluate": "(+ = white, - = black, 0 = draw) This is the current evaluation of the position:"
+                     "2. ?eval - displays the bot evaluation of the current position",
+            "?eval": "(+ = white, - = black, 0 = draw) This is the current evaluation of the position:"
         }
 
         match text:
             case "?help":
                 self.send_message(game_id=game_id, text=defined_commands["?help"])
-            case "?evaluate":
+            case "?eval":
                 evaluation = croissantdealer.evaluate()
-                print(f"{defined_commands['?evaluate']} {evaluation}")
-                self.send_message(game_id=game_id, text=f"{defined_commands['?evaluate']} {evaluation}")
+                self.send_message(game_id=game_id, text=f"{defined_commands['?eval']} {evaluation}")
 
 
 # initialize the logs
