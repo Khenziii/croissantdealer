@@ -1,10 +1,12 @@
 import chess
 import random
 
+
 class Engine:
     """The setup for the braining thing"""
-    def __init__(self, color: str) -> None:
-        self.board = chess.Board()
+    def __init__(self, color: str, fen: str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") -> None:
+        self.board = chess.Board(fen=fen)
+        self.initial_fen = fen
         self.color = color
         self.values = {
             "pawn": 1,
@@ -194,6 +196,8 @@ class Croissantdealer(Engine):
         return [best_move, best_eval]
 
     def minimax(self, board: chess.Board, depth: int, alpha: int, beta: int, maximizing: bool):
+        print(depth)
+
         if not board:
             board = self.board
 

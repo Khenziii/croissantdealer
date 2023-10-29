@@ -66,6 +66,9 @@ class Lichess:
         self.verbose = verbose
         self.command_list = ["?help", "?eval"]
 
+        # type them in lowercase!!
+        self.accepted_variants = ["standard", "fromposition"]
+
     def login(self):
         return requests.get(f'{self.url}/api/stream/event', headers=self.headers, stream=True)
 
@@ -111,20 +114,30 @@ class Lichess:
                         logs.info(f"{sender_username}'s challenge id: {challenge_id}, "
                                   f"time control: {challenge_time_control}, challenge variant: {challenge_variant}")
 
-                    if challenge_variant.lower() == "standard":
+                    if challenge_variant.lower() in self.accepted_variants:
                         if not challenge_rated:
                             if environment != "DEVELOPMENT":
-                                self.start_game(challenge_id, our_color)
+                                self.accept_game(challenge_id)
                             else:
                                 if sender_username == dev_username:
-                                    self.start_game(challenge_id, our_color)
+                                    self.accept_game(challenge_id)
                                 else:
                                     self.reject_game(game_id=challenge_id,
                                                      reason=f"we're in dev environment, and the user isn't {dev_username}")
                         else:
-                            self.reject_game(game_id=challenge_id, reason=f"the sender tried to play a ranked game", reason_to_send="casual")
+                            self.reject_game(game_id=challenge_id, reason=f"the sender tried to play a ranked game",
+                                             reason_to_send="casual")
                     else:
-                        self.reject_game(game_id=challenge_id, reason=f"it didn't contain the correct variant", reason_to_send="standard")
+                        self.reject_game(game_id=challenge_id, reason=f"it didn't contain the correct variant",
+                                         reason_to_send="variant")
+
+                # create a stream for all the games
+                elif json_data["type"] == "gameStart":
+                    game_id = json_data["game"]["id"]
+                    color = json_data["game"]["color"]
+                    fen = json_data["game"]["fen"]
+
+                    self.start_game(game_id=game_id, color=color, fen=fen)
 
     def play_move(self, game_id: str, move: str, croissantdealer: Croissantdealer):
         croissantdealer.make_move(move)
@@ -133,13 +146,15 @@ class Lichess:
         if response.status_code != 200:
             logs.error(f"Something went wrong while making the move, here is the error: {response.text}")
 
-    def handle_game_stream(self, game_id: str, color: str):
+    def handle_game_stream(self, game_id: str, color: str, fen: str):
         # spin up the croissantdealer engine
-        croissantdealer = Croissantdealer(color=color)
+        croissantdealer = Croissantdealer(color=color, fen=fen)
 
-        self.send_message(game_id=game_id, text="Hi! :) Send '?help' for the list of all commands "
-                                                "and their's description. Checkout my bio for the "
-                                                "link to the github repo!")
+        chat = self.get_chat(game_id=game_id)
+        if not chat:
+            self.send_message(game_id=game_id, text="Hi! :) Send '?help' for the list of all commands "
+                                                    "and their's description. Checkout my bio for the "
+                                                    "link to the github repo!")
 
         # connect to the game stream
         response = requests.get(f'{self.url}/api/bot/game/stream/{game_id}', headers=self.headers, stream=True)
@@ -187,17 +202,23 @@ class Lichess:
                             if json_data["text"] in self.command_list:
                                 self.commands(game_id=game_id, text=json_data["text"], croissantdealer=croissantdealer)
 
-    def start_game(self, game_id: str, color: str):
-        # start the game
+    def start_game(self, game_id: str, color: str, fen: str):
+        """starts playing a game"""
+        # create a thread for the game stream
+        game_thread = threading.Thread(target=self.handle_game_stream, args=(game_id, color, fen))
+        game_thread.start()
+
+    def accept_game(self, game_id: str):
+        """accepts a game"""
+
+        # accept a game
         response = requests.post(f"{self.url}/api/challenge/{game_id}/accept", headers=self.headers)
         if response.status_code == "200":
             logs.info(f"Successfully started a game with id of: {game_id}")
             active_games.append(game_id)
         else:
-            logs.error(f"Something went wrong while trying to start a game with an id of {game_id}, here is the error: {response.text}")
-
-        game_thread = threading.Thread(target=self.handle_game_stream, args=(game_id, color))
-        game_thread.start()
+            logs.error(f"Something went wrong while trying to start a game with an id of {game_id}, here is the error: "
+                       f"{response.text}")
 
     def reject_game(self, game_id: str, reason: str, reason_to_send: str = "later"):
         # available options are listed here: https://lichess.org/api#tag/Challenges/operation/challengeDecline
@@ -233,12 +254,15 @@ class Lichess:
 
     def get_chat(self, game_id: str):
         """get chat of a game"""
-        response = requests.get(f'{self.url}/api/board/game/{game_id}/chat', headers=self.headers)
+        response = requests.get(f'{self.url}/api/bot/game/{game_id}/chat', headers=self.headers)
         if response.status_code == 200:
             logs.info(f"Successfully got the chat of a challenge with an id of: '{game_id}'")
+            return response.json()
         else:
             logs.error(f"Failed to get the chat of a challenge with an id of: "
                        f"'{game_id}'. Here is the error: {response.text}")
+
+            return 1
 
     def commands(self, game_id: str, croissantdealer: Croissantdealer, text: str = "?help"):
         defined_commands = {
@@ -252,8 +276,9 @@ class Lichess:
             case "?help":
                 self.send_message(game_id=game_id, text=defined_commands["?help"])
             case "?eval":
-                evaluation = croissantdealer.evaluate()
-                self.send_message(game_id=game_id, text=f"{defined_commands['?eval']} {evaluation}")
+                move, evaluation = croissantdealer.get_move()
+                self.send_message(game_id=game_id, text=f"{defined_commands['?eval']} {evaluation}. "
+                                                        f"Best move ( in my opinion :) ): {str(move)}.")
 
 
 # initialize the logs
