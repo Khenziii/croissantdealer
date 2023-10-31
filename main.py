@@ -3,7 +3,8 @@ from dotenv import load_dotenv
 import os
 import threading
 import json
-from datetime import datetime, timedelta, timezone
+import datetime
+import pytz
 
 from engine import Croissantdealer
 
@@ -27,32 +28,36 @@ url = "https://lichess.org"
 active_games = []
 
 
-def get_current_time(hours):
-    """returns the current time in string format"""
-    sum_time = timezone(timedelta(hours=hours))
-    current_datetime = datetime.now(sum_time)
-
-    return current_datetime.strftime(f"%d/%m/%y - %H:%M:%S")
-
-
 class Logger:
     """
     Logs stuff
 
-    :param timezone_hours: The amount of hours forward in UTC (eg. timezone: 2 = UTC+2)
+    :param timezone: The timezone to use
     """
 
-    def __init__(self, timezone_hours: int):
-        self.timezone_hours = timezone_hours
+    def __init__(self, timezone: str = "Europe/Warsaw"):
+        self.timezone = timezone
+
+    def get_current_time(self, timezone: str = None):
+        """returns the current time in string format"""
+        if not timezone:
+            timezone = self.timezone
+
+        # get the time in the specified timezone
+        time = pytz.timezone(timezone)
+        # get the datetime object
+        datetime_time = datetime.datetime.now(time)
+
+        return datetime_time.strftime(f"%d/%m/%y - %H:%M:%S")
 
     def info(self, msg: str):
-        print(f"[i] {get_current_time(self.timezone_hours)} > {msg}")
+        print(f"[i] {self.get_current_time()} > {msg}")
 
     def warning(self, msg: str):
-        print(f"[w] {get_current_time(self.timezone_hours)} > {msg}")
+        print(f"[w] {self.get_current_time()} > {msg}")
 
     def error(self, msg: str):
-        print(f"[e] {get_current_time(self.timezone_hours)} > {msg}")
+        print(f"[e] {self.get_current_time()} > {msg}")
 
 
 class Lichess:
@@ -282,7 +287,7 @@ class Lichess:
 
 
 # initialize the logs
-logs = Logger(timezone_hours=2)
+logs = Logger(timezone="Europe/Warsaw")
 
 if not verbose:
     verbose = False
