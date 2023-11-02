@@ -129,6 +129,18 @@ class Engine:
 
         return pieces
 
+    def strip_fen(self, fen: str = None) -> str:
+        # expected FEN example: 8/3r4/7Q/4p3/2rkr3/2rrr3/8/6K1 w - - 0 3
+        # read more about the FEN format here: https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation
+        # we're stripping it from the last part (e.g. " 0 3") because we don't want to keep track
+        # of the moves (this would cause the bot to calculate positions again in the next turn)
+
+        if not fen:
+            fen = self.board.fen()
+
+        print("".join(fen.split(" ")[:4]))
+        return "".join(fen.split(" ")[:4])
+
     # methods that get inherited (by the Croissantdealer class) are defined below
     def get_move(self):
         pass
@@ -196,8 +208,6 @@ class Croissantdealer(Engine):
         return [best_move, best_eval]
 
     def minimax(self, board: chess.Board, depth: int, alpha: int, beta: int, maximizing: bool):
-        print(depth)
-
         if not board:
             board = self.board
 
@@ -205,6 +215,12 @@ class Croissantdealer(Engine):
         if depth <= 0 or board.is_game_over():
             return self.evaluate(board=board)
 
+        # check if already evaluated this tree
+        stripped_fen = self.strip_fen(fen=board.fen())
+        if stripped_fen in self.transposition_table:
+            return self.transposition_table[stripped_fen]
+
+        # if not, continue going down the tree
         if maximizing:
             max_eval = -100000
 
@@ -254,9 +270,10 @@ class Croissantdealer(Engine):
         if not board:
             board = self.board
 
+        stripped_fen = self.strip_fen(board.fen())
         # check if we have already evaluated this board
-        if board.fen() in self.transposition_table:
-            return self.transposition_table[board.fen()]
+        if stripped_fen in self.transposition_table:
+            return self.transposition_table[stripped_fen]
 
         # if the board is checkmate
         if board.is_checkmate():
@@ -328,6 +345,6 @@ class Croissantdealer(Engine):
         evaluation = worthiness_white - worthiness_black
 
         # save the evaluation to the transposition table
-        self.transposition_table[board.fen()] = evaluation
+        self.transposition_table[stripped_fen] = evaluation
 
         return evaluation
