@@ -1,5 +1,3 @@
 secrets.env
-test.py
-env/
-.idea/
-__pycache__/
+target/
+src/test.rs
