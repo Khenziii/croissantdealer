@@ -1,10 +1,12 @@
 import chess
 import random
+import time
+import sys
 
-
+sys.setrecursionlimit(2000)
 class Engine:
     """The setup for the braining thing"""
-    def __init__(self, color: str, fen: str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") -> None:
+    def __init__(self, color: str, fen: str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", dev: bool = False) -> None:
         self.board = chess.Board(fen=fen)
         self.initial_fen = fen
         self.color = color
@@ -17,6 +19,24 @@ class Engine:
             "activity": 0.1
         }
         self.transposition_table = {}
+        self.dev = dev
+        self.dev_values = {
+            "positions_checked": 0,
+            "positions_evaluated": 0,
+            "positions_skipped": 0,
+            "time_spent": 0.0,
+            "minimax_used_times": 0
+        }
+
+    def reset_dev_values(self) -> None:
+        self.dev_values = {
+            "positions_checked": 0,
+            "positions_evaluated": 0,
+            "positions_skipped": 0,
+            "time_spent": 0.0,
+            "minimax_used_times": 0
+        }
+
     def new_board(self) -> None:
         """Resets the board"""
         self.board = chess.Board()
@@ -72,18 +92,21 @@ class Engine:
             board = self.board
 
         # get all the legal moves
-        legal_moves = list(board.legal_moves)
+        moves = list(board.legal_moves)
 
         # Sort them in a good order (e.g. first moves will be something like: "take a piece with a pawn")
         # This makes the alpha beta pruning much more effective
         if return_in_order:
             # Sort the moves based on the heuristic scores
-            legal_moves.sort(key=lambda move: self.heuristic(board=board, move=move), reverse=True)
+            moves.sort(key=lambda move: self.heuristic(board=board, move=move), reverse=True)
 
-        return legal_moves
+        return moves
 
-    def get_pieces(self, board: chess.Board):
+    def get_pieces(self, board: chess.Board = None):
         """returns the list of all pieces"""
+        if not board:
+            board = self.board
+
         pieces = {
             "white": {
                 "pawns": 0,
@@ -134,11 +157,9 @@ class Engine:
         # read more about the FEN format here: https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation
         # we're stripping it from the last part (e.g. " 0 3") because we don't want to keep track
         # of the moves (this would cause the bot to calculate positions again in the next turn)
-
         if not fen:
             fen = self.board.fen()
 
-        print("".join(fen.split(" ")[:4]))
         return "".join(fen.split(" ")[:4])
 
     # methods that get inherited (by the Croissantdealer class) are defined below
@@ -152,8 +173,10 @@ class Engine:
 class Croissantdealer(Engine):
     """The braining thing"""
 
-    def get_move(self, board: chess.Board = None, depth: int = 3) -> list[chess.Move | int]:
+    def get_move(self, board: chess.Board = None, depth: int = 2) -> list[chess.Move | int]:
         """Calculate the move to make"""
+        start_time = time.perf_counter()
+
         if not board:
             board = self.board
 
@@ -203,40 +226,72 @@ class Croissantdealer(Engine):
                     best_moves.append(move)
 
         # get a random move from the equally best moves
-        best_move = random.choice(best_moves)
+        if best_moves:
+            best_move = random.choice(best_moves)
+        else:
+            # if the list is empty
+            best_move = None
+
+        end_time = time.perf_counter()
+        self.dev_values["time_spent"] = end_time - start_time
+        if self.dev:
+            print(f"The dev environment output!")
+            print(f"1. total time spent thinking: {self.dev_values['time_spent']}")
+            print(f"2. the amount of positions checked: {self.dev_values['positions_checked']}")
+            print(f"3. the amount of positions evaluated: {self.dev_values['positions_evaluated']}")
+            print(f"4. the amount of positions skipped: {self.dev_values['positions_skipped']}")
+            print(f"5. the amount of times that we used minimax: {self.dev_values['minimax_used_times']}")
+            print(f"Result: The best move is {best_move} with an eval of {best_eval}.")
+
+            self.reset_dev_values()
 
         return [best_move, best_eval]
 
     def minimax(self, board: chess.Board, depth: int, alpha: int, beta: int, maximizing: bool):
+        """a function that uses the minimax algorithm to calculates the line to at least minimum depth and then later
+        until no checks and captures / game over"""
+        self.dev_values["minimax_used_times"] += 1
+        print(self.dev_values["minimax_used_times"])
+
         if not board:
             board = self.board
 
-        # if reached the end of the line, return the evaluation
-        if depth <= 0 or board.is_game_over():
-            return self.evaluate(board=board)
+        # if depth <= 0 or board.is_game_over():
+        #    return self.evaluate(board=board)
 
-        # check if already evaluated this tree
-        stripped_fen = self.strip_fen(fen=board.fen())
-        if stripped_fen in self.transposition_table:
-            return self.transposition_table[stripped_fen]
+        # if the game is over, don't calculate further
+        if board.is_game_over():
+            return self.evaluate(board)
 
-        # if not, continue going down the tree
+        # if reached the end of the line, check for captures and checks
+        if depth <= 0:
+            # create a temp_board to make sure that nothing happens to the original one
+            temp_board = board.copy()
+            temp_board_old = temp_board.copy()
+
+            # get the last move
+            last_move = temp_board.peek()
+            # go back in time on the old board
+            temp_board_old.pop()
+
+            # if the board is in check or the last move was a capture
+            if temp_board.is_check() or temp_board_old.is_capture(last_move):
+                depth = 1  # extend search by one if capture or check is present
+            else:
+                return self.evaluate(board)
+
+        # if not, get da moves and continue going down the tree
+        moves = self.get_legal_moves(board=board)
         if maximizing:
             max_eval = -100000
 
-            moves = self.get_legal_moves(board=board)
             for move in moves:
                 # create a copy of the current board
                 temp_board = board.copy()
                 # play a move on the copied board
                 temp_board.push(move)
 
-                conditions_for_longer_calculation = temp_board.is_check()  # add another conditions here
-                if conditions_for_longer_calculation:
-                    eval = self.minimax(board=temp_board, depth=depth, alpha=alpha, beta=beta, maximizing=False)
-                else:
-                    eval = self.minimax(board=temp_board, depth=depth - 1, alpha=alpha, beta=beta, maximizing=False)
-
+                eval = self.minimax(board=temp_board, depth=depth - 1, alpha=alpha, beta=beta, maximizing=False)
                 max_eval = max(max_eval, eval)
 
                 alpha = max(alpha, eval)
@@ -246,19 +301,13 @@ class Croissantdealer(Engine):
         else:
             min_eval = 10000
 
-            moves = self.get_legal_moves(board=board)
             for move in moves:
                 # create a copy of the current board
                 temp_board = board.copy()
                 # play a move on the copied board
                 temp_board.push(move)
 
-                conditions_for_longer_calculation = temp_board.is_check()  # add another conditions here
-                if conditions_for_longer_calculation:
-                    eval = self.minimax(board=temp_board, depth=depth, alpha=alpha, beta=beta, maximizing=True)
-                else:
-                    eval = self.minimax(board=temp_board, depth=depth - 1, alpha=alpha, beta=beta, maximizing=True)
-
+                eval = self.minimax(board=temp_board, depth=depth - 1, alpha=alpha, beta=beta, maximizing=True)
                 min_eval = min(min_eval, eval)
 
                 beta = min(beta, eval)
@@ -270,9 +319,12 @@ class Croissantdealer(Engine):
         if not board:
             board = self.board
 
+        self.dev_values["positions_checked"] += 1
+
         stripped_fen = self.strip_fen(board.fen())
         # check if we have already evaluated this board
         if stripped_fen in self.transposition_table:
+            self.dev_values["positions_skipped"] += 1
             return self.transposition_table[stripped_fen]
 
         # if the board is checkmate
@@ -346,5 +398,7 @@ class Croissantdealer(Engine):
 
         # save the evaluation to the transposition table
         self.transposition_table[stripped_fen] = evaluation
+
+        self.dev_values["positions_evaluated"] += 1
 
         return evaluation

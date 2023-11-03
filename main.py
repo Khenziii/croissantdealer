@@ -5,6 +5,7 @@ import threading
 import json
 import datetime
 import pytz
+import time
 
 from engine import Croissantdealer
 
@@ -68,6 +69,7 @@ class Lichess:
         self.headers = headers
         self.url = url
         self.environment = environment
+        self.dev = True if environment.lower() == "development" else False
         self.verbose = verbose
         self.command_list = ["?help", "?eval"]
 
@@ -153,7 +155,7 @@ class Lichess:
 
     def handle_game_stream(self, game_id: str, color: str, fen: str):
         # spin up the croissantdealer engine
-        croissantdealer = Croissantdealer(color=color, fen=fen)
+        croissantdealer = Croissantdealer(color=color, fen=fen, dev=self.dev)
 
         chat = self.get_chat(game_id=game_id)
         if not chat:
@@ -173,6 +175,27 @@ class Lichess:
                 json_data = json.loads(decoded_line)
 
                 # process the events here
+                # check if the game is older than 2 hours (someone just left)
+                try:
+                    # get the timestamp
+                    created_at = json_data["createdAt"]
+
+                    # convert the timestamp to seconds
+                    created_at = created_at / 1000
+
+                    # Get the current timestamp in seconds
+                    current_at = time.time()
+
+                    # Calculate the time difference
+                    time_difference_seconds = current_at - created_at
+
+                    # Check if it's more than 2 hours ago (7200 seconds)
+                    if time_difference_seconds > 7200:
+                        self.resign(game_id=game_id)
+                        break
+                except KeyError:
+                    pass
+
                 # check if we need to make a move
                 try:
                     if json_data["status"] == "mate":
@@ -201,7 +224,7 @@ class Lichess:
                             # calculate the move to make
                             move = croissantdealer.get_move()[0]
                             self.play_move(game_id=game_id, move=str(move), croissantdealer=croissantdealer)
-                    except KeyError as e:
+                    except KeyError:
                         # check if the event is a chat message
                         if json_data["type"] == "chatLine":
                             if json_data["text"] in self.command_list:
