@@ -1,4 +1,3 @@
 secrets.env
 target/
-src/test.rs
 .idea/
