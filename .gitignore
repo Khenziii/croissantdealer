@@ -1,5 +1,5 @@
-secrets.env
-test.py
-env/
-.idea/
-__pycache__/
+
+
+# Added by cargo
+
+/target

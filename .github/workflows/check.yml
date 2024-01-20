@@ -1,0 +1,40 @@
+on: push
+jobs:
+  clippy-check:
+    name: 🧐 Clippy Check
+    runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: "-D warnings"
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Run Clippy
+        run: cargo clippy --all-targets --all-features
+  fmt-check:
+    name: 👀 Fmt Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Run Fmt
+        run: cargo fmt --all -- --check
+  build-check:
+    name: 🔨 Build Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Try To Build
+        run: cargo build --release
+  cargo-test:
+    name: 🦀 Cargo Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Run Checks
+        run: cargo test
