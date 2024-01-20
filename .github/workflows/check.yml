@@ -29,3 +29,12 @@ jobs:
 
       - name: Try To Build
         run: cargo build --release
+  cargo-test:
+    name: 🦀 Cargo Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Run Checks
+        run: cargo test
