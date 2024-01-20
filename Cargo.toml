@@ -2,7 +2,7 @@
 name = "croissantdealer"
 version = "0.1.0"
 edition = "2021"
-authors = "Khenzii"
+authors = ["Khenzii"]
 description = "Chess bot"
 repository = "https://github.com/Khenziii/croissantdealer"
 readme = "README.md"
