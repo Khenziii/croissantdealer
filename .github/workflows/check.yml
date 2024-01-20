@@ -1,8 +1,7 @@
 on: push
-name: 🧐 Clippy Check
-
 jobs:
   clippy-check:
+    name: 🧐 Clippy Check
     runs-on: ubuntu-latest
     env:
       RUSTFLAGS: "-Dwarnings"
@@ -12,3 +11,12 @@ jobs:
 
       - name: Run Clippy
         run: cargo clippy --all-targets --all-features
+  fmt-check:
+    name: 👀 fmt Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Run Fmt
+        run: cargo fmt --all -- --check
