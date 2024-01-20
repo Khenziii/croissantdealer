@@ -1,0 +1,13 @@
+[package]
+name = "croissantdealer"
+version = "0.1.0"
+edition = "2021"
+authors = "Khenzii"
+description = "Chess bot"
+repository = "https://github.com/Khenziii/croissantdealer"
+readme = "README.md"
+license-file = "LICENSE"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
