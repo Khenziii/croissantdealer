@@ -14,5 +14,8 @@ cargo clippy --all-targets --all-features
 echo '$ cargo fmt'
 cargo fmt --all -- --check
 
+echo '$ cargo build --release'
+cargo build --release
+
 echo '$ cargo test'
 cargo test

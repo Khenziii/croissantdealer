@@ -12,7 +12,7 @@ jobs:
       - name: Run Clippy
         run: cargo clippy --all-targets --all-features
   fmt-check:
-    name: 👀 fmt Check
+    name: 👀 Fmt Check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -20,3 +20,12 @@ jobs:
 
       - name: Run Fmt
         run: cargo fmt --all -- --check
+  build-check:
+    name: 🔨 Build Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Try To Build
+        run: cargo build --release
