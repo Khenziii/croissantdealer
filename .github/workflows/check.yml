@@ -3,12 +3,14 @@ jobs:
   clippy-check:
     name: 🧐 Clippy Check
     runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: "-D warnings"
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
 
       - name: Run Clippy
-        run: cargo clippy --all-targets --all-features -D warnings
+        run: cargo clippy --all-targets --all-features
   fmt-check:
     name: 👀 fmt Check
     runs-on: ubuntu-latest

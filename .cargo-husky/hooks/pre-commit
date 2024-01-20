@@ -1,12 +1,18 @@
 #!/bin/sh
 
+# reminder:
+# In order to make your changes made to this file noticeable,
+# you'll need to delete the /target directory and run:
+# `cargo test` again
+
 set -e
 
-echo '+cargo clippy'
-cargo clippy --all-targets --all-features -D warnings
+echo '$ cargo clippy'
+export RUSTFLAGS="-D warnings"
+cargo clippy --all-targets --all-features
 
-echo '+cargo fmt'
+echo '$ cargo fmt'
 cargo fmt --all -- --check
 
-echo '+cargo test'
+echo '$ cargo test'
 cargo test
