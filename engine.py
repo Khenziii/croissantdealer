@@ -196,8 +196,6 @@ class Croissantdealer(Engine):
         return [best_move, best_eval]
 
     def minimax(self, board: chess.Board, depth: int, alpha: int, beta: int, maximizing: bool):
-        print(depth)
-
         if not board:
             board = self.board
 
