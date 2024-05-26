@@ -33,11 +33,18 @@ jobs:
           username: khenzii
           password: ${{ secrets.DOCKER_PAT }}
 
-      - name: Docker Build & Push
+      - name: [Default] Docker Build & Push
         uses: docker/build-push-action@v5
         with:
           push: true
           tags: khenzii/croissantdealer:latest
+
+      - name: [Web Server] Docker Build & Push
+        uses: docker/build-push-action@v5
+        with:
+          push: true
+          tags: khenzii/croissantdealer:web-server-latest
+          build-args: WEB_SERVER=true
 
       - name: Trigger Deployment Webhook
         run: |
