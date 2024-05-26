@@ -12,6 +12,12 @@ COPY . .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
+# AFAIK, there's no way to expose
+# a port condtionally. The container
+# has to expose this, even if it
+# won't run in the WEB_SERVER mode.
+EXPOSE 8080
+
 RUN if [ "$WEB_SERVER" = "false" ]; then \ 
 		rm docker-entrypoint.py; \
 	else \
