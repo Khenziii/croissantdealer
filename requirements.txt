@@ -1,6 +1,6 @@
 backoff==2.2.1
 berserk==0.13
-certifi==2023.7.22
+certifi==2024.7.4
 charset-normalizer==3.3.0
 chess==1.10.0
 Deprecated==1.2.14
