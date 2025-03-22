@@ -7,9 +7,6 @@ as of right now, croissantdealer has these features:
 2. **ordering the moves for pruning** - certain moves will be ordered specifically to make the bot be able to prune the other options 
 3. **transposition table** - the bot is using a transposition table to avoid evaluating position a couple of times
 
-# Contributing
-If you'd like to contribute, go ahead  :). All the contributions are **greatly** appreciated. I'll try to close all of the PR's and Issues ASAP. You can checkout the guide to enter the development enviorment below.
-
 # Starting the dev environment
 1. create the python virtual environment: `python3 -m venv env`
 2. start the virtual environment: `source env/bin/activate` (if you're on Linux, Windows uses different syntax)
